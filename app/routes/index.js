@@ -21,7 +21,7 @@ module.exports = function(passport){
 
 	/* Handle Login POST */
 	router.post('/login', passport.authenticate('login', {
-		successRedirect: '/home',
+		successRedirect: '/profile',
 		failureRedirect: '/',
 		failureFlash : true  
 	}));
@@ -33,7 +33,7 @@ module.exports = function(passport){
 
 	/* Handle Registration POST */
 	router.post('/signup', passport.authenticate('signup', {
-		successRedirect: '/home',
+		successRedirect: '/profile',
 		failureRedirect: '/signup',
 		failureFlash : true  
 	}));
@@ -43,11 +43,31 @@ module.exports = function(passport){
 		res.render('home', { user: req.user });
 	});
 
+	/* GET Profile Page */
+	router.get('/profile', isAuthenticated, function(req, res){
+		res.render('profile', { user: req.user });
+	});
+
 	/* Handle Logout */
 	router.get('/signout', function(req, res) {
 		req.logout();
 		res.redirect('/');
 	});
+
+	// =====================================
+    // GOOGLE ROUTES =======================
+    // =====================================
+    // send to google to do the authentication
+    // profile gets us their basic information including their name
+    // email gets their emails
+    router.get('/auth/google', passport.authenticate('loging', { scope : ['profile', 'email'] }));
+
+    // the callback after google has authenticated the user
+    router.get('/auth/google/callback',
+            passport.authenticate('loging', {
+                    successRedirect : '/profile',
+                    failureRedirect : '/'
+            }));
 
 	return router;
 }
