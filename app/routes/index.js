@@ -8,21 +8,21 @@ var isAuthenticated = function (req, res, next) {
 	if (req.isAuthenticated())
 		return next();
 	// if the user is not authenticated then redirect him to the login page
-	res.redirect('/');
+	res.redirect('/login');
 }
 
 module.exports = function(passport){
 
 	/* GET login page. */
-	router.get('/', function(req, res) {
+	router.get('/login', function(req, res) {
     	// Display the Login page with any flash message, if any
-		res.render('index', { message: req.flash('message') });
+		res.render('login', { message: req.flash('message') });
 	});
 
 	/* Handle Login POST */
-	router.post('/login', passport.authenticate('login', {
-		successRedirect: '/profile',
-		failureRedirect: '/',
+	router.post('/signin', passport.authenticate('login', {
+		successRedirect: '/',
+		failureRedirect: '/login',
 		failureFlash : true  
 	}));
 
@@ -39,8 +39,8 @@ module.exports = function(passport){
 	}));
 
 	/* GET Home Page */
-	router.get('/home', isAuthenticated, function(req, res){
-		res.render('home', { user: req.user });
+	router.get('/', isAuthenticated, function(req, res){
+		res.render('index', { user: req.user });
 	});
 
 	/* GET Profile Page */
@@ -55,6 +55,39 @@ module.exports = function(passport){
 	});
 
 	// =====================================
+    // EXPERIMENT ROUTES ===================
+    // =====================================
+
+	/* hello-world */
+	router.get('/exp/hello-world', isAuthenticated, function(req, res){
+		res.render('exp/hello-world', { user: req.user });
+	});
+
+	router.get('/exp/go-nogo', isAuthenticated, function(req, res){
+	    res.render('exp/go-nogo', { user: req.user });
+	});
+
+	router.get('/exp/finish', isAuthenticated, function(req, res){
+	    res.render('exp/finish', { user: req.user });
+	})
+
+	router.post('/exp/go-nogo-data', isAuthenticated, function(req, res){
+		var Exp = require('../models/experiments');
+		var newExpData = new Exp();
+	    newExpData.create({
+	    	"experiment":"go-nogo",
+	    	"user":req.user._id,
+	        "data":req.body
+	    });    
+	    res.end();
+	}) 
+
+	// =====================================
+    // EXPERIMENT ROUTES END ===============
+    // =====================================
+
+
+	// =====================================
     // GOOGLE ROUTES =======================
     // =====================================
     // send to google to do the authentication
@@ -65,8 +98,8 @@ module.exports = function(passport){
     // the callback after google has authenticated the user
     router.get('/auth/google/callback',
             passport.authenticate('loging', {
-                    successRedirect : '/profile',
-                    failureRedirect : '/'
+                    successRedirect : '/',
+                    failureRedirect : '/login'
             }));
 
 	return router;

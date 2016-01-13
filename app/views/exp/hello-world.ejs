@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+    <title>Hello world</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="../jspsych/jspsych.js"></script>
+    <script src="../jspsych/plugins/jspsych-text.js"></script>
+    <link href="../jspsych/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+</head>
+<body>
+</body>
+<script>
+<% var temp; if (user.local.username) {temp = user.local.username} else {temp = user.google.name} %>
+    var hello_trial = {
+        type: 'text',
+        text: 'Hello <%= temp %>!'
+    }
+
+    jsPsych.init({
+        timeline: [ hello_trial ]
+    });
+
+</script>
+</html>
