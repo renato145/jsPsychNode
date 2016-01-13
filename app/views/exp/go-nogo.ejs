@@ -1,130 +1,166 @@
 <!doctype html>
 <html>
   <head>
-    <title>go-nogo</title>
+    <title>Go-Nogo</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <script src="../jspsych/jspsych.js"></script>
     <script src="../jspsych/plugins/jspsych-text.js"></script>
     <script src="../jspsych/plugins/jspsych-single-stim.js"></script>
     <link href="../jspsych/css/jspsych.css" rel="stylesheet" type="text/css"></link>
-    <link href="../stylesheets/experiment.css" rel="stylesheet" type="text/css"></link>
   </head>
   <body>
-    <div class = "parent">
-      <div class = "child">
-        <div id="jspsych_target"></div>
-      </div>
-    </div>
   </body>
   <script>
+  <% var tempName;
+    if (user.local.username) {
+      tempName = user.local.username
+    } else {
+      tempName = user.google.name
+    } %>
+  /* define welcome message block */
+  var welcome_block = {
+    type: "text",
+    text: "Welcome to the experiment <%= tempName %>. Press any key to begin."
+  };
 
-    /* define instructions block */
-    var instructions_block = {
-      type: "text",
-      text: "<p>In this experiment, a circle will appear in the center " +
-          "of the screen.<br>If the circle is <strong>blue</strong>, " +
-          "press the letter F on the keyboard as fast as you can." +
-          "<br>If the circle is <strong>orange</strong>, do not press " +
-          "any key.</p>" +
-          "<div class='left center-content'><img src='../img/blue.png'></img>" +
-          "<p class='small'><strong>Press the F key</strong></p></div>" +
-          "<div class='right center-content'><img src='../img/orange.png'></img>" +
-          "<p class='small'><strong>Do not press a key</strong></p></div>" +
-          "<p><strong>Press any key to begin.</strong></p>",
-      timing_post_trial: 2000
-    };
+  /* define instructions block */
+  var instructions_block = {
+    type: "text",
+    text: "<p>In this experiment, a circle will appear in the center " +
+        "of the screen.</p><p>If the circle is <strong>blue</strong>, " +
+        "press the letter F on the keyboard as fast as you can.</p>" +
+        "<p>If the circle is <strong>orange</strong>, do not press " +
+        "any key.</p>" +
+        "<div class='left center-content'><img src='../img/blue.png'></img>" +
+        "<p class='small'><strong>Press the F key</strong></p></div>" +
+        "<div class='right center-content'><img src='../img/orange.png'></img>" +
+        "<p class='small'><strong>Do not press a key</strong></p></div>" +
+        "<p>Press any key to begin.</p>",
+    timing_post_trial: 2000
+  };
 
-    /* define test block */
+  /* define test block */
 
-    var test_stimulus1 = {
-        stimulus: '../img/blue.png',
-        data: { response: 'go' }
+  var test_stimuli = [
+    {
+      stimulus: "../img/blue.png",
+      data: { response: 'go' }
+    },
+    {
+      stimulus: "../img/orange.png",
+      data: { response: 'no-go' }
     }
-    var test_stimulus2 = {
-        stimulus: '../img/orange.png',
-        data: { response: 'no-go' }
-    }
-    var test_stimulus = [ test_stimulus1, test_stimulus2 ];
-    var all_trials = jsPsych.randomization.repeat(test_stimulus, 5, true);
-    var test_stimulus2 = [
-      {
-        image: { stimulus: "../img/blue.png" },
-        data: { response: 'go' }
-      },
-      {
-        image: { stimulus: "../img/orange.png" },
-        data: { response: 'no-go' }
+  ];
+
+  var all_trials = jsPsych.randomization.repeat(test_stimuli, 1);
+
+  var post_trial_gap = function() {
+    return Math.floor( Math.random() * 1500 ) + 750;
+  }
+
+  var test_block = {
+    type: "single-stim",
+    choices: ['F'],
+    timing_response: 1500,
+    timing_post_trial: post_trial_gap,
+    on_finish: function(data){
+      var correct = false;
+      if(data.response == 'go' && data.rt > -1){
+        correct = true;
+      } else if(data.response == 'no-go' && data.rt == -1){
+        correct = true;
       }
-    ];
+      jsPsych.data.addDataToLastTrial({correct: correct});
+    },
+    timeline: all_trials
+  };
 
-    var all_trials2 = jsPsych.randomization.repeat(test_stimulus, 5, true);
+  /* define debrief block */
 
-    var post_trial_gap = function() {
-      return Math.floor( Math.random() * 1500 ) + 750;
-    }
+  function getSubjectData() {
 
-    var test_block = {
-      type: "single-stim",
-      timeline: all_trials,
-      choices: ['F'],
-      data: all_trials.data,
-      timing_response: 1500,
-      timing_post_trial: post_trial_gap
-    };
+    var trials = jsPsych.data.getTrialsOfType('single-stim');
 
-    /* define debrief block */
-
-    function getAverageResponseTime() {
-
-      var trials = jsPsych.data.getTrialsOfType('single-stim');
-
-      var sum_rt = 0;
-      var valid_trial_count = 0;
-      for (var i = 0; i < trials.length; i++) {
-        if (trials[i].response == 'go' && trials[i].rt > -1) {
+    var sum_rt = 0;
+    var correct_trial_count = 0;
+    var correct_rt_count = 0;
+    for (var i = 0; i < trials.length; i++) {
+      if (trials[i].correct == true) {
+        correct_trial_count++;
+        if(trials[i].rt > -1){
           sum_rt += trials[i].rt;
-          valid_trial_count++;
+          correct_rt_count++;
         }
       }
-      return Math.floor(sum_rt / valid_trial_count);
     }
+    return {
+      rt: Math.floor(sum_rt / correct_rt_count),
+      accuracy: Math.floor(correct_trial_count / trials.length * 100)
+    }
+  }
 
-    var debrief_block = {
-      type: "text",
-      text: function() {
-        return "<p>Your average response time was <strong>" +
-        getAverageResponseTime() + "ms</strong>. Press " +
-        "any key to complete the experiment. Thank you!</p>";
-      }
-    };
+  var debrief_block = {
+    type: "text",
+    text: function() {
+      var subject_data = getSubjectData();
+      return "<p>You responded correctly on "+subject_data.accuracy+"% of "+
+      "the trials.</p><p>Your average response time was <strong>" +
+      subject_data.rt + "ms</strong>. Press any key to complete the "+
+      "experiment. Thank you!</p>";
+    }
+  };
 
-    /* create experiment definition array */
-    var experiment = [];
-    experiment.push(instructions_block);
-    experiment.push(test_block);
-    experiment.push(debrief_block);
+  /* create experiment timeline array */
+  var timeline = [];
+  timeline.push(welcome_block);
+  timeline.push(instructions_block);
+  timeline.push(test_block);
+  timeline.push(debrief_block);
 
-    /* start the experiment */
-    jsPsych.init({
-      display_element: $('#jspsych_target'),
-      timeline: experiment,
-      on_finish: function() {
-        // jsPsych.data.displayData();
-        //instead of displaying data in the on_finish callback, we post it to our server using an AJAX call:
-        $.ajax({
+  function getFinalData(){
+    var trials = jsPsych.data.getTrialsOfType('single-stim');
+    var temp = [];
+    for (var i = 0; i < trials.length; i++) {
+      temp.push({
+        correct: trials[i].correct,
+        internal_node_id: trials[i].internal_node_id,
+        stimulus: trials[i].stimulus,
+        response_time: trials[i].rt
+      });
+    }
+    return {
+      data: temp
+    }
+  } 
+   
+  /* start the experiment */
+  jsPsych.init({
+    timeline: timeline,
+    on_finish: function() {
+      //jsPsych.data.displayData();
+      //console.log(getFinalData());
+      $.ajax({
           type: "POST",
           url: "/exp/go-nogo-data",
-          data: JSON.stringify(jsPsych.data.getData()),
+          data: JSON.stringify(getFinalData()),
           contentType: "application/json"
         })
         .done(function() {
-          window.location.href = "finish";
+          //alert("Done")
+          window.location.href = "/finish";
         })
         .fail(function() {
-          alert("A problem occurred while writing to the database. Please contact the researcher for more information.")
-          window.location.href = "/";
+          alert("A problem occurred while writing to the database.")
+          //window.location.href = "/";
         })
-      }
-    });
-  </script>
+    }
+  });
+  
+  /*
+  jsPsych.data.addProperties({
+    subject: "<%= user._id %>"
+  });
+  */
+
+</script>
 </html>

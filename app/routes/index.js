@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+var Exp = require('../models/experiment');
 
 var isAuthenticated = function (req, res, next) {
 	// if user is authenticated in the session, call the next() to call the next request handler 
@@ -58,11 +59,17 @@ module.exports = function(passport){
     // EXPERIMENT ROUTES ===================
     // =====================================
 
+    /* finish */
+    router.get('/finish', isAuthenticated, function(req, res){
+		res.render('finish', { user: req.user });
+	});
+
 	/* hello-world */
 	router.get('/exp/hello-world', isAuthenticated, function(req, res){
 		res.render('exp/hello-world', { user: req.user });
 	});
 
+	/* go-nogo */
 	router.get('/exp/go-nogo', isAuthenticated, function(req, res){
 	    res.render('exp/go-nogo', { user: req.user });
 	});
@@ -72,14 +79,28 @@ module.exports = function(passport){
 	})
 
 	router.post('/exp/go-nogo-data', isAuthenticated, function(req, res){
-		var Exp = require('../models/experiments');
 		var newExpData = new Exp();
-	    newExpData.create({
-	    	"experiment":"go-nogo",
-	    	"user":req.user._id,
-	        "data":req.body
-	    });    
-	    res.end();
+		newExpData.subjectId = req.user._id;
+		if(req.user.local.username){
+			newExpData.subjectName = req.user.local.username;
+			newExpData.subjectEmail = req.user.local.email;
+		}
+		else{
+			newExpData.subjectName = req.user.google.name;
+			newExpData.subjectEmail = req.user.google.email;
+		}
+		newExpData.experiment = "go-nogo";
+		newExpData.data = req.body.data;
+		var tempDate = new Date();
+		newExpData.date = tempDate.toJSON();
+		newExpData.save(function(err){
+			if(err){
+				console.log('Error in save: '+err);  
+                throw err;
+			}
+		console.log('Save succesful');
+		res.end();
+		});
 	}) 
 
 	// =====================================
