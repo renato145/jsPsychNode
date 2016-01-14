@@ -74,33 +74,107 @@ module.exports = function(passport){
 	    res.render('exp/go-nogo', { user: req.user });
 	});
 
+	/* save-experiment-data */
 	router.get('/exp/finish', isAuthenticated, function(req, res){
 	    res.render('exp/finish', { user: req.user });
 	})
 
-	router.post('/exp/go-nogo-data', isAuthenticated, function(req, res){
-		var newExpData = new Exp();
-		newExpData.subjectId = req.user._id;
+	router.post('/exp/save-data', isAuthenticated, function(req, res){
+
+		var tempEmail, tempName;
 		if(req.user.local.username){
-			newExpData.subjectName = req.user.local.username;
-			newExpData.subjectEmail = req.user.local.email;
+			tempName = req.user.local.username;
+			tempEmail = req.user.local.email;
 		}
 		else{
-			newExpData.subjectName = req.user.google.name;
-			newExpData.subjectEmail = req.user.google.email;
+			tempName = req.user.google.name;
+			tempEmail = req.user.google.email;
 		}
-		newExpData.experiment = "go-nogo";
-		newExpData.data = req.body.data;
 		var tempDate = new Date();
-		newExpData.date = tempDate.toJSON();
-		newExpData.save(function(err){
-			if(err){
-				console.log('Error in save: '+err);  
-                throw err;
-			}
-		console.log('Save succesful');
-		res.end();
+
+		Exp.findOne({ 'name' :  req.body.name, 'subject.subjectId' :  req.user._id },
+		 function(err, exp) {
+		 	// In case of any error, return using the done method
+            if (err){
+                console.log('Error in save-experiment-data');
+                return done(err);
+            }
+            // exists
+            if (exp) {
+            	// push experiment
+				for(i in exp.subject){
+				    if(exp.subject[i].subjectId == req.user._id){
+		            	exp.subject[i].experiment.push({
+		            		date	 : tempDate.toJSON(),
+							data	 : req.body.data
+		            	});
+		            	exp.save(function(err) {
+							if (err){
+							    console.log('Error in save: '+err);  
+							    throw err;  
+							}
+							console.log('Save succesful');    
+							res.end();
+						});
+				    }
+				    console.log('Error in save: no subject found');
+				    res.end();
+				}
+            } else {
+		    	Exp.findOne({ 'name' :  req.body.name }, function(err, exp) {
+					// In case of any error, return using the done method
+		            if (err){
+		                console.log('Error in save-experiment-data');
+		                return done(err);
+		            }
+		            // exists
+		            if (exp) {
+		            	// create subject and push
+		            	exp.subject.push({
+		            		subjectId	 : req.user._id,
+							name		 : tempName,
+							email		 : tempEmail,
+							experiment 	 : [{
+								date	 : tempDate.toJSON(),
+								data	 : req.body.data
+							}]
+		            	});
+		            	exp.save(function(err) {
+							if (err){
+							    console.log('Error in save: '+err);  
+							    throw err;  
+							}
+							console.log('Save succesful');    
+							res.end();
+						});
+		            } else {
+		                // if there is no experiment
+		                // create it with the subject
+		               	var newExpData = new Exp();
+						newExpData.name = req.body.name;
+						newExpData.subject = [{
+							subjectId	 : req.user._id,
+							name		 : tempName,
+							email		 : tempEmail,
+							experiment 	 : [{
+								date	 : tempDate.toJSON(),
+								data	 : req.body.data
+							}]
+						}];				
+						newExpData.save(function(err){
+							if(err){
+								console.log('Error in save: '+err);  
+				                throw err;
+							}
+							console.log('Save succesful');
+							res.end();
+						});
+		            }
+				});
+            }
 		});
+
+
 	}) 
 
 	// =====================================

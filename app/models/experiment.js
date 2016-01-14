@@ -1,13 +1,16 @@
 
 var mongoose = require('mongoose');
 
+var Subjects = new mongoose.Schema({
+	subjectId	 : String,
+	name		 : String,
+	email		 : String,
+	experiment 	 : [{
+		date	 : String,
+		data	 : []
+	}]
+});
 module.exports = mongoose.model('ExperimentData',{
-
-	subjectId		 : String,
-	subjectName		 : String,
-	subjectEmail	 : String,
-	experiment		 : String,
-	date			 : String,
-	data 			 : []
-
+	name			 : String,
+	subject 		 : [Subjects]
 });

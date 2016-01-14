@@ -118,7 +118,8 @@
   timeline.push(debrief_block);
 
   function getFinalData(){
-    var trials = jsPsych.data.getTrialsOfType('single-stim');
+    var subject_data = getSubjectData();
+    /*var trials = jsPsych.data.getTrialsOfType('single-stim');
     var temp = [];
     for (var i = 0; i < trials.length; i++) {
       temp.push({
@@ -127,9 +128,13 @@
         stimulus: trials[i].stimulus,
         response_time: trials[i].rt
       });
-    }
+    }*/
     return {
-      data: temp
+      name: "go-nogo",
+      data: [{
+        responseTime: subject_data.rt,
+        accuracy: subject_data.accuracy
+      }]
     }
   } 
    
@@ -141,7 +146,7 @@
       //console.log(getFinalData());
       $.ajax({
           type: "POST",
-          url: "/exp/go-nogo-data",
+          url: "/exp/save-data",
           data: JSON.stringify(getFinalData()),
           contentType: "application/json"
         })
