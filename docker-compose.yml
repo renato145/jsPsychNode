@@ -9,3 +9,9 @@ jspsych-node:
   container_name: jspsych-node
 mongo:
   image: mongo
+rockmongo:
+  image: webts/rockmongo
+  ports:
+   - "8008:80"
+  links:
+   - mongo:db
